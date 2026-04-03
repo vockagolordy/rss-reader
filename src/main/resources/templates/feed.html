@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="base">
+<head>
+    <title>My Feed - RSS Reader</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1 class="mb-4">My Feed</h1>
+
+    <div th:if="${posts == null or posts.isEmpty()}" class="alert alert-info">
+        No posts yet. Add some RSS sources to see news here!
+    </div>
+
+    <div th:unless="${posts == null or posts.isEmpty()}">
+        <div th:each="post : ${posts}" class="card post-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="card-title">
+                            <a th:href="@{/posts/{id}(id=${post.id})}"
+                               class="text-decoration-none" th:text="${post.title} ?: 'No title'">
+                                Post Title
+                            </a>
+                        </h5>
+                        <p class="card-text" th:text="${post.description} ?: 'No description'">
+                            Post description...
+                        </p>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        Source: <span th:text="${post.resourceTitle}">Resource Title</span>
+                    </small>
+                    <br>
+                    <small class="text-muted">
+                        Published:
+                        <span th:if="${post.publishedAt}"
+                              th:text="${#temporals.format(post.publishedAt, 'yyyy-MM-dd HH:mm')}">
+                            Published date
+                        </span>
+                        <span th:unless="${post.publishedAt}">Unknown date</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Пагинация -->
+        <nav aria-label="Page navigation" class="mt-4" th:if="${totalPages > 1}">
+            <ul class="pagination justify-content-center">
+                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                    <a class="page-link" th:href="@{/posts(page=${currentPage - 1}, size=${size})}"
+                       th:unless="${currentPage == 0}">Previous</a>
+                    <span class="page-link" th:if="${currentPage == 0}">Previous</span>
+                </li>
+
+                <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                    class="page-item" th:classappend="${i == currentPage} ? 'active'">
+                    <a class="page-link" th:href="@{/posts(page=${i}, size=${size})}"
+                       th:text="${i + 1}">1</a>
+                </li>
+
+                <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                    <a class="page-link" th:href="@{/posts(page=${currentPage + 1}, size=${size})}"
+                       th:unless="${currentPage == totalPages - 1}">Next</a>
+                    <span class="page-link" th:if="${currentPage == totalPages - 1}">Next</span>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="text-center text-muted" th:if="${totalPosts > 0}">
+            Showing posts <span th:text="${currentPage * size + 1}"></span>
+            to <span th:text="${currentPage * size + posts.size()}"></span>
+            of <span th:text="${totalPosts}"></span>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="base">
+<head>
+    <title>My Resources - RSS Reader</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>My RSS Sources</h1>
+        <a href="/resources/add" class="btn btn-primary">Add New Source</a>
+    </div>
+
+    <div th:if="${resources == null or resources.isEmpty()}" class="alert alert-info">
+        You haven't added any RSS sources yet. Click "Add New Source" to get started!
+    </div>
+
+    <div class="row" th:unless="${resources == null or resources.isEmpty()}">
+        <div th:each="resource : ${resources}" class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title" th:text="${resource.title}">Resource Title</h5>
+                    <p class="card-text">
+                        <strong>URL:</strong>
+                        <a th:href="${resource.link}" target="_blank" th:text="${resource.link}">Link</a>
+                    </p>
+                    <p class="card-text">
+                        <small class="text-muted">
+                            Added: <span th:text="${#temporals.format(resource.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
+                        </small>
+                    </p>
+                    <form th:action="@{/resources/{id}/delete(id=${resource.id})}" method="post"
+                          onsubmit="return confirm('Are you sure you want to remove this source?')">
+                        <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
