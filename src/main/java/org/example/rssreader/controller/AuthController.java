@@ -1,9 +1,9 @@
 package org.example.rssreader.controller;
 
 import org.example.rssreader.dto.UserRegistrationDto;
-import org.example.rssreader.model.User;
 import org.example.rssreader.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 
 @Controller
@@ -57,21 +56,30 @@ public class AuthController {
     public String showLoginForm(@RequestParam(value = "error", required = false) String error,
                                 @RequestParam(value = "logout", required = false) String logout,
                                 @RequestParam(value = "registered", required = false) String registered,
-                                Model model, HttpSession session) {
-
-        if (session.getAttribute("user") != null) {
+                                Model model,
+                                Authentication authentication) {
+        if (isAuthenticated(authentication)) {
             return "redirect:/posts";
         }
 
         if (error != null) {
             model.addAttribute("error", "Invalid username or password");
         }
+
         if (logout != null) {
             model.addAttribute("message", "You have been logged out successfully");
         }
+
         if (registered != null) {
             model.addAttribute("message", "Registration successful! Please login.");
         }
+
         return "login";
+    }
+
+    private boolean isAuthenticated(Authentication authentication) {
+        return authentication != null
+                && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getPrincipal());
     }
 }

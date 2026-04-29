@@ -32,6 +32,7 @@ public class AppInitializer implements WebApplicationInitializer {
                 RootConfig.class,
                 DataSourceConfig.class,
                 JpaConfig.class,
+                OAuth2ClientConfig.class,
                 SecurityConfig.class
         );
 

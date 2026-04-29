@@ -32,6 +32,17 @@
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Login</button>
                     </form>
+                    <div class="oauth-login">
+                        <p>Or login with:</p>
+
+                        <a th:href="@{/oauth2/authorization/github}">
+                            Login with GitHub
+                        </a>
+                        <br>
+                        <a th:href="@{/oauth2/authorization/google}">
+                            Login with Google
+                        </a>
+                    </div>
                     <div class="mt-3 text-center">
                         <a href="/register">Don't have an account? Register here</a>
                     </div>

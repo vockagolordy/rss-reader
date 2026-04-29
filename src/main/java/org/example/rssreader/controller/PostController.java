@@ -3,15 +3,16 @@ package org.example.rssreader.controller;
 import org.example.rssreader.model.Post;
 import org.example.rssreader.model.Resource;
 import org.example.rssreader.model.User;
+import org.example.rssreader.service.CurrentUserService;
 import org.example.rssreader.service.PostService;
 import org.example.rssreader.service.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,28 +22,24 @@ public class PostController {
 
     private final PostService postService;
     private final ResourceService resourceService;
+    private final CurrentUserService currentUserService;
 
     @Autowired
-    public PostController(PostService postService, ResourceService resourceService) {
+    public PostController(PostService postService,
+                          ResourceService resourceService,
+                          CurrentUserService currentUserService) {
         this.postService = postService;
         this.resourceService = resourceService;
-    }
-
-    private User getCurrentUser(HttpSession session) {
-        User user = (User) session.getAttribute("user");
-        if (user == null) {
-            throw new RuntimeException("User not logged in");
-        }
-        return user;
+        this.currentUserService = currentUserService;
     }
 
     @GetMapping
     public String showFeed(@RequestParam(name = "page", defaultValue = "0") int page,
                            @RequestParam(name = "size", defaultValue = "10") int size,
-                           HttpSession session,
+                           Authentication authentication,
                            Model model,
                            RedirectAttributes redirectAttributes) {
-        User user = getCurrentUser(session);
+        User user = currentUserService.getCurrentUser(authentication);
 
         int newPostsCount = postService.refreshUserFeed(user.getId());
         if (newPostsCount > 0) {
@@ -65,9 +62,9 @@ public class PostController {
 
     @GetMapping("/{id}")
     public String showPost(@PathVariable("id") long id,
-                           HttpSession session,
+                           Authentication authentication,
                            Model model) {
-        User user = getCurrentUser(session);
+        User user = currentUserService.getCurrentUser(authentication);
 
         Optional<Post> postOpt = postService.getPostById(id);
 
@@ -86,9 +83,7 @@ public class PostController {
         }
 
         Optional<Resource> resourceOpt = resourceService.findById(post.getResourceId());
-        resourceOpt.ifPresent(resource -> {
-            model.addAttribute("resource", resource);
-        });
+        resourceOpt.ifPresent(resource -> model.addAttribute("resource", resource));
 
         model.addAttribute("post", post);
         return "post";

@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.example.rssreader.util.AuthProvider;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -43,8 +44,17 @@ public class User {
     @ToString.Include
     private String email;
 
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash")
     private String passwordHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    @ToString.Include
+    private AuthProvider provider = AuthProvider.local;
+
+    @Column(name = "provider_id", length = 255)
+    @ToString.Include
+    private String providerId;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -63,6 +73,8 @@ public class User {
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
+        this.provider = AuthProvider.local;
+        this.providerId = null;
         this.createdAt = createdAt;
     }
 

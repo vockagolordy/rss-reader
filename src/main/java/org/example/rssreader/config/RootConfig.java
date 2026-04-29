@@ -9,7 +9,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @ComponentScan(basePackages = {
         "org.example.rssreader.service",
         "org.example.rssreader.repository",
-        "org.example.rssreader.util"
+        "org.example.rssreader.util",
+        "org.example.rssreader.security"
 })
 public class RootConfig {
 }
