@@ -37,7 +37,7 @@ public class RSSParser {
 
             for (SyndEntry entry : feed.getEntries()) {
                 Post post = new Post();
-                post.setResourceId(resource.getId());
+                post.setResource(resource);
                 post.setTitle(entry.getTitle());
                 post.setLink(entry.getLink());
 

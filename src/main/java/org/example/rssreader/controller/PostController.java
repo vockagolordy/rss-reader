@@ -54,13 +54,6 @@ public class PostController {
         int totalPosts = postService.getUserFeedCount(user.getId());
         int totalPages = (int) Math.ceil((double) totalPosts / size);
 
-        for (Post post : posts) {
-            Optional<Resource> resourceOpt = resourceService.findById(post.getResourceId());
-            resourceOpt.ifPresent(resource -> {
-                post.setResourceTitle(resource.getTitle());
-            });
-        }
-
         model.addAttribute("posts", posts);
         model.addAttribute("currentPage", page);
         model.addAttribute("totalPages", totalPages);

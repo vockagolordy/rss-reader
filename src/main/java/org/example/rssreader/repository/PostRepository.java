@@ -1,19 +1,20 @@
 package org.example.rssreader.repository;
 
 import org.example.rssreader.model.Post;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
 import java.util.Optional;
 
+public interface PostRepository extends JpaRepository<Post, Long> {
 
-public interface PostRepository {
-
-    Post save(Post post);
-    Post insert(Post post);
-    Post update(Post post);
-    List<Post> findByResourceId(long resourceId, int limit, int offset);
-    List<Post> findByUserId(long userId, int limit, int offset);
-    int countByUserId(long userId);
     boolean existsByLink(String link);
-    Optional<Post> findById(long id);
+
+    @EntityGraph(attributePaths = "resource")
+    Page<Post> findDistinctByResourceUsersId(long userId, Pageable pageable);
+
+    @EntityGraph(attributePaths = "resource")
+    Optional<Post> findWithResourceById(long id);
 }

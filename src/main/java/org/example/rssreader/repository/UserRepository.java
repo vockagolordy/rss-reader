@@ -1,25 +1,17 @@
 package org.example.rssreader.repository;
 
-
 import org.example.rssreader.model.User;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface UserRepository {
-
-    User save(User user);
-
-    User insert(User user);
-
-    User update(User user);
+public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByUsername(String username);
 
     Optional<User> findByEmail(String email);
 
-    Optional<User> findById(long id);
-
-    void addResourceToUser(long userId, long resourceId);
-
-    void removeResourceFromUser(long userId, long resourceId);
+    @EntityGraph(attributePaths = "resources")
+    Optional<User> findWithResourcesById(long id);
 }

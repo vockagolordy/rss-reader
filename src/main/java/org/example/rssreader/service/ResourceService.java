@@ -39,6 +39,7 @@ public class ResourceService {
         }
 
         Resource resource = new Resource();
+
         resource.setTitle(resourceDto.getTitle());
         resource.setLink(resourceDto.getLink());
         resource.setCreatedAt(LocalDateTime.now());
@@ -47,13 +48,15 @@ public class ResourceService {
         return resourceRepository.save(resource);
     }
 
+    @Transactional(readOnly = true)
     public List<Resource> getUserResources(long userId) {
-        return resourceRepository.findByUserId(userId);
+        return resourceRepository.findByUsersIdOrderByCreatedAtDesc(userId);
     }
 
     @Transactional
     public int updateResourcePosts(long resourceId) {
         Optional<Resource> resourceOpt = resourceRepository.findById(resourceId);
+
         if (resourceOpt.isEmpty()) {
             return 0;
         }
@@ -66,6 +69,7 @@ public class ResourceService {
 
             for (Post post : newPosts) {
                 if (!postRepository.existsByLink(post.getLink())) {
+                    post.setResource(resource);
                     postRepository.save(post);
                     newPostsCount++;
                 }
@@ -94,6 +98,7 @@ public class ResourceService {
         return totalNewPosts;
     }
 
+    @Transactional(readOnly = true)
     public Optional<Resource> findById(long id) {
         return resourceRepository.findById(id);
     }

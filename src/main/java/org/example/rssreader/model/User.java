@@ -1,81 +1,90 @@
 package org.example.rssreader.model;
 
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@ToString(onlyExplicitlyIncluded = true)
+@Entity
+@Table(
+        name = "users",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_users_uuid", columnNames = "uuid"),
+                @UniqueConstraint(name = "uk_users_username", columnNames = "username"),
+                @UniqueConstraint(name = "uk_users_email", columnNames = "email")
+        }
+)
 public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @ToString.Include
     private long id;
+
+    @Column(nullable = false, length = 100)
+    @ToString.Include
     private String uuid;
+
+    @Column(nullable = false, length = 50)
+    @ToString.Include
     private String username;
+
+    @Column(nullable = false, length = 100)
+    @ToString.Include
     private String email;
+
+    @Column(name = "password_hash", nullable = false)
     private String passwordHash;
+
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
-    private Set<Resource> resources;
 
-    public User() {
-    }
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "user_resources",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "resource_id")
+    )
+    @ToString.Exclude
+    private Set<Resource> resources = new HashSet<>();
 
-    public User(String uuid, String username, String email, String passwordHash, LocalDateTime createdAt, Set<Resource> resources) {
+    public User(String uuid, String username, String email, String passwordHash, LocalDateTime createdAt) {
         this.uuid = uuid;
         this.username = username;
         this.email = email;
         this.passwordHash = passwordHash;
         this.createdAt = createdAt;
-        this.resources = resources;
     }
 
-    public User(long id, String uuid, String username, String email, String passwordHash, LocalDateTime createdAt, Set<Resource> resources) {
-        this.id = id;
-        this.uuid = uuid;
-        this.username = username;
-        this.email = email;
-        this.passwordHash = passwordHash;
-        this.createdAt = createdAt;
-        this.resources = resources;
+    public void addResource(Resource resource) {
+        resources.add(resource);
+        resource.getUsers().add(this);
     }
 
-    public long getId() { return id; }
-    public void setId(long id) { this.id = id; }
-
-    public String getUuid() { return uuid; }
-    public void setUuid(String uuid) { this.uuid = uuid; }
-
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-
-    public String getPasswordHash() { return passwordHash; }
-    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    public Set<Resource> getResources() { return resources; }
-    public void setResources(Set<Resource> resources) { this.resources = resources; }
+    public void removeResource(Resource resource) {
+        resources.remove(resource);
+        resource.getUsers().remove(this);
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        User user = (User) o;
-        return id == user.id;
+        if (!(o instanceof User user)) return false;
+        return id != 0 && id == user.id;
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(id);
-    }
-
-    @Override
-    public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", uuid='" + uuid + '\'' +
-                ", username='" + username + '\'' +
-                ", email='" + email + '\'' +
-                '}';
     }
 }

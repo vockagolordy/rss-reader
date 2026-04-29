@@ -31,6 +31,7 @@ public class AppInitializer implements WebApplicationInitializer {
         rootContext.register(
                 RootConfig.class,
                 DataSourceConfig.class,
+                JpaConfig.class,
                 SecurityConfig.class
         );
 
