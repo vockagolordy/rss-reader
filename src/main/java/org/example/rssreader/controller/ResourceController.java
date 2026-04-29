@@ -71,7 +71,7 @@ public class ResourceController {
     }
 
     @PostMapping("/{id}/delete")
-    public String deleteResource(@PathVariable long id,
+    public String deleteResource(@PathVariable("id") long id,
                                  HttpSession session,
                                  RedirectAttributes redirectAttributes) {
         User user = getCurrentUser(session);

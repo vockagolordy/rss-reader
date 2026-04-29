@@ -37,8 +37,8 @@ public class PostController {
     }
 
     @GetMapping
-    public String showFeed(@RequestParam(defaultValue = "0") int page,
-                           @RequestParam(defaultValue = "10") int size,
+    public String showFeed(@RequestParam(name = "page", defaultValue = "0") int page,
+                           @RequestParam(name = "size", defaultValue = "10") int size,
                            HttpSession session,
                            Model model,
                            RedirectAttributes redirectAttributes) {
@@ -71,7 +71,7 @@ public class PostController {
     }
 
     @GetMapping("/{id}")
-    public String showPost(@PathVariable long id,
+    public String showPost(@PathVariable("id") long id,
                            HttpSession session,
                            Model model) {
         User user = getCurrentUser(session);
