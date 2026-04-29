@@ -169,17 +169,23 @@ public class UserService {
 
     private OAuthUserData extractGithubUserData(OAuth2User oauthUser,
                                                 OAuth2AuthenticationToken token) {
-        String providerId = String.valueOf(oauthUser.getAttribute("id"));
-        String login = oauthUser.getAttribute("login");
-        String email = oauthUser.getAttribute("email");
+        Object idAttribute = oauthUser.getAttribute("id");
 
-        if (providerId == null || providerId.isBlank() || "null".equals(providerId)) {
+        if (idAttribute == null) {
             throw new OAuth2AuthenticationException("GitHub user id is missing");
         }
 
-        if (email == null || email.isBlank()) {
-            email = loadPrimaryGithubEmail(token);
+        String providerId = idAttribute.toString();
+
+        if (providerId.isBlank() || "null".equals(providerId)) {
+            throw new OAuth2AuthenticationException("GitHub user id is missing");
         }
+
+        Object loginAttribute = oauthUser.getAttribute("login");
+        Object emailAttribute = oauthUser.getAttribute("email");
+
+        String login = loginAttribute == null ? null : loginAttribute.toString();
+        String email = emailAttribute == null ? null : emailAttribute.toString();
 
         if (email == null || email.isBlank()) {
             email = AuthProvider.github.getFallbackEmail(providerId);

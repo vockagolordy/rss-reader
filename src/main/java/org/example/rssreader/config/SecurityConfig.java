@@ -1,6 +1,6 @@
 package org.example.rssreader.config;
 
-import org.example.rssreader.security.OAuth2LoginSuccessHandler;
+import org.example.rssreader.security.OAuth2LoginHandler;
 import org.example.rssreader.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,12 +16,12 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 public class SecurityConfig {
 
     private final UserService userService;
-    private final OAuth2LoginSuccessHandler oauth2LoginSuccessHandler;
+    private final OAuth2LoginHandler oauth2LoginHandler;
 
     public SecurityConfig(UserService userService,
-                          OAuth2LoginSuccessHandler oauth2LoginSuccessHandler) {
+                          OAuth2LoginHandler oauth2LoginHandler) {
         this.userService = userService;
-        this.oauth2LoginSuccessHandler = oauth2LoginSuccessHandler;
+        this.oauth2LoginHandler = oauth2LoginHandler;
     }
 
     @Bean
@@ -35,7 +35,8 @@ public class SecurityConfig {
                                 new AntPathRequestMatcher("/login/oauth2/**"),
                                 new AntPathRequestMatcher("/css/**"),
                                 new AntPathRequestMatcher("/js/**"),
-                                new AntPathRequestMatcher("/images/**")
+                                new AntPathRequestMatcher("/images/**"),
+                                new AntPathRequestMatcher("/favicon.ico")
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
@@ -43,12 +44,13 @@ public class SecurityConfig {
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
                         .defaultSuccessUrl("/posts", true)
-                        .failureUrl("/login?error=true")
+                        .failureUrl("/login?loginError=true")
                         .permitAll()
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/login")
-                        .successHandler(oauth2LoginSuccessHandler)
+                        .successHandler(oauth2LoginHandler)
+                        .failureHandler(oauth2LoginHandler)
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
