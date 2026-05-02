@@ -8,7 +8,9 @@ import java.util.Optional;
 
 public interface ResourceRepository extends JpaRepository<Resource, Long> {
 
+    List<Resource> findByUsersIdOrderByCreatedAtDesc(long userId);
+
     Optional<Resource> findByLink(String link);
 
-    List<Resource> findByUsersIdOrderByCreatedAtDesc(long userId);
+    boolean existsByLink(String link);
 }
