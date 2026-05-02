@@ -9,72 +9,172 @@
 <div layout:fragment="content">
     <h1 class="mb-4">My Feed</h1>
 
-    <div th:if="${posts == null or posts.isEmpty()}" class="alert alert-info">
+    <div th:if="${info}" class="alert alert-info" th:text="${info}"></div>
+
+    <div id="empty-message" class="alert alert-info d-none">
         No posts yet. Add some RSS sources to see news here!
     </div>
 
-    <div th:unless="${posts == null or posts.isEmpty()}">
-        <div th:each="post : ${posts}" class="card post-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h5 class="card-title">
-                            <a th:href="@{/posts/{id}(id=${post.id})}"
-                               class="text-decoration-none" th:text="${post.title} ?: 'No title'">
-                                Post Title
-                            </a>
-                        </h5>
-                        <p class="card-text" th:text="${post.description} ?: 'No description'">
-                            Post description...
-                        </p>
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <small class="text-muted">
-                        Source: <span th:text="${post.resourceTitle}">Resource Title</span>
-                    </small>
-                    <br>
-                    <small class="text-muted">
-                        Published:
-                        <span th:if="${post.publishedAt}"
-                              th:text="${#temporals.format(post.publishedAt, 'yyyy-MM-dd HH:mm')}">
-                            Published date
-                        </span>
-                        <span th:unless="${post.publishedAt}">Unknown date</span>
-                    </small>
-                </div>
-            </div>
-        </div>
+    <div id="posts-container"></div>
 
-        <!-- Пагинация -->
-        <nav aria-label="Page navigation" class="mt-4" th:if="${totalPages > 1}">
-            <ul class="pagination justify-content-center">
-                <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                    <a class="page-link" th:href="@{/posts(page=${currentPage - 1}, size=${size})}"
-                       th:unless="${currentPage == 0}">Previous</a>
-                    <span class="page-link" th:if="${currentPage == 0}">Previous</span>
-                </li>
-
-                <li th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-                    class="page-item" th:classappend="${i == currentPage} ? 'active'">
-                    <a class="page-link" th:href="@{/posts(page=${i}, size=${size})}"
-                       th:text="${i + 1}">1</a>
-                </li>
-
-                <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
-                    <a class="page-link" th:href="@{/posts(page=${currentPage + 1}, size=${size})}"
-                       th:unless="${currentPage == totalPages - 1}">Next</a>
-                    <span class="page-link" th:if="${currentPage == totalPages - 1}">Next</span>
-                </li>
-            </ul>
-        </nav>
-
-        <div class="text-center text-muted" th:if="${totalPosts > 0}">
-            Showing posts <span th:text="${currentPage * size + 1}"></span>
-            to <span th:text="${currentPage * size + posts.size()}"></span>
-            of <span th:text="${totalPosts}"></span>
-        </div>
+    <div id="loading-message" class="text-center text-muted my-4 d-none">
+        Loading posts...
     </div>
+
+    <div id="end-message" class="text-center text-muted my-4 d-none">
+        No more posts.
+    </div>
+
+    <script>
+        let page = 0;
+        const size = 10;
+        let loading = false;
+        let hasNext = true;
+        let loadedPosts = 0;
+
+        const postsContainer = document.getElementById('posts-container');
+        const loadingMessage = document.getElementById('loading-message');
+        const endMessage = document.getElementById('end-message');
+        const emptyMessage = document.getElementById('empty-message');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPosts();
+        });
+
+        window.addEventListener('scroll', () => {
+            const scrollPosition = window.innerHeight + window.scrollY;
+            const pageHeight = document.documentElement.scrollHeight;
+
+            if (scrollPosition >= pageHeight - 200) {
+                loadPosts();
+            }
+        });
+
+        async function loadPosts() {
+            if (loading || !hasNext) {
+                return;
+            }
+
+            loading = true;
+            loadingMessage.classList.remove('d-none');
+
+            try {
+                const response = await fetch(`/posts/feed?page=${page}&size=${size}`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Request failed with status ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                renderPosts(data.posts);
+
+                loadedPosts += data.posts.length;
+                hasNext = data.hasNext;
+                page += 1;
+
+                if (loadedPosts === 0) {
+                    emptyMessage.classList.remove('d-none');
+                }
+
+                if (!hasNext && loadedPosts > 0) {
+                    endMessage.classList.remove('d-none');
+                }
+            } catch (error) {
+                console.error(error);
+                showLoadError();
+            } finally {
+                loading = false;
+                loadingMessage.classList.add('d-none');
+            }
+        }
+
+        function renderPosts(posts) {
+            posts.forEach(post => {
+                postsContainer.appendChild(createPostCard(post));
+            });
+        }
+
+        function createPostCard(post) {
+            const card = document.createElement('div');
+            card.className = 'card post-card';
+
+            const cardBody = document.createElement('div');
+            cardBody.className = 'card-body';
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'd-flex justify-content-between align-items-start';
+
+            const content = document.createElement('div');
+
+            const title = document.createElement('h5');
+            title.className = 'card-title';
+
+            const titleLink = document.createElement('a');
+            titleLink.className = 'text-decoration-none';
+            titleLink.href = `/posts/${post.id}`;
+            titleLink.textContent = post.title || 'No title';
+
+            title.appendChild(titleLink);
+
+            const description = document.createElement('p');
+            description.className = 'card-text';
+            description.textContent = post.description || 'No description';
+
+            content.appendChild(title);
+            content.appendChild(description);
+            wrapper.appendChild(content);
+
+            const meta = document.createElement('div');
+            meta.className = 'mt-2';
+
+            const source = document.createElement('small');
+            source.className = 'text-muted';
+            source.textContent = `Source: ${post.resourceTitle || 'Unknown source'}`;
+
+            const lineBreak = document.createElement('br');
+
+            const published = document.createElement('small');
+            published.className = 'text-muted';
+            published.textContent = `Published: ${formatDate(post.publishedAt)}`;
+
+            meta.appendChild(source);
+            meta.appendChild(lineBreak);
+            meta.appendChild(published);
+
+            cardBody.appendChild(wrapper);
+            cardBody.appendChild(meta);
+            card.appendChild(cardBody);
+
+            return card;
+        }
+
+        function formatDate(value) {
+            if (!value) {
+                return 'Unknown date';
+            }
+
+            const date = new Date(value);
+
+            if (Number.isNaN(date.getTime())) {
+                return 'Unknown date';
+            }
+
+            return date.toLocaleString();
+        }
+
+        function showLoadError() {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-danger';
+            alert.textContent = 'Failed to load posts. Please try again later.';
+
+            postsContainer.appendChild(alert);
+        }
+    </script>
 </div>
 </body>
 </html>

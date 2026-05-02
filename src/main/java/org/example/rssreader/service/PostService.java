@@ -3,7 +3,6 @@ package org.example.rssreader.service;
 import org.example.rssreader.model.Post;
 import org.example.rssreader.model.Resource;
 import org.example.rssreader.repository.PostRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -19,34 +18,33 @@ public class PostService {
     private final PostRepository postRepository;
     private final ResourceService resourceService;
 
-    @Autowired
     public PostService(PostRepository postRepository, ResourceService resourceService) {
         this.postRepository = postRepository;
         this.resourceService = resourceService;
     }
 
     @Transactional(readOnly = true)
-    public List<Post> getUserFeed(long userId, int page, int size) {
+    public Page<Post> getUserFeedPage(long userId, int page, int size) {
         PageRequest pageRequest = PageRequest.of(
-                page,
-                size,
+                Math.max(page, 0),
+                Math.max(size, 1),
                 Sort.by(
                         Sort.Order.desc("publishedAt"),
                         Sort.Order.desc("addedAt")
                 )
         );
 
-        Page<Post> posts = postRepository.findDistinctByResourceUsersId(userId, pageRequest);
+        return postRepository.findDistinctByResourceUsersId(userId, pageRequest);
+    }
 
-        return posts.getContent();
+    @Transactional(readOnly = true)
+    public List<Post> getUserFeed(long userId, int page, int size) {
+        return getUserFeedPage(userId, page, size).getContent();
     }
 
     @Transactional(readOnly = true)
     public int getUserFeedCount(long userId) {
-        PageRequest pageRequest = PageRequest.of(0, 1);
-        Page<Post> posts = postRepository.findDistinctByResourceUsersId(userId, pageRequest);
-
-        return (int) posts.getTotalElements();
+        return (int) getUserFeedPage(userId, 0, 1).getTotalElements();
     }
 
     @Transactional(readOnly = true)
