@@ -2,12 +2,10 @@ package org.example.rssreader.controller;
 
 import org.example.rssreader.dto.ResourceDto;
 import org.example.rssreader.model.Resource;
-import org.example.rssreader.model.User;
-import org.example.rssreader.service.CurrentUserService;
 import org.example.rssreader.service.ResourceService;
 import org.example.rssreader.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -23,22 +21,18 @@ public class ResourceController {
 
     private final ResourceService resourceService;
     private final UserService userService;
-    private final CurrentUserService currentUserService;
 
     @Autowired
     public ResourceController(ResourceService resourceService,
-                              UserService userService,
-                              CurrentUserService currentUserService) {
+                              UserService userService) {
         this.resourceService = resourceService;
         this.userService = userService;
-        this.currentUserService = currentUserService;
     }
 
     @GetMapping
-    public String listResources(Authentication authentication, Model model) {
-        User user = currentUserService.getCurrentUser(authentication);
-
-        List<Resource> resources = resourceService.getUserResources(user.getId());
+    public String listResources(@AuthenticationPrincipal(expression = "id") long userId,
+                                Model model) {
+        List<Resource> resources = resourceService.getUserResources(userId);
 
         model.addAttribute("resources", resources);
         return "resources";
@@ -53,16 +47,15 @@ public class ResourceController {
     @PostMapping
     public String addResource(@Valid @ModelAttribute("resource") ResourceDto resourceDto,
                               BindingResult result,
-                              Authentication authentication,
+                              @AuthenticationPrincipal(expression = "id") long userId,
                               RedirectAttributes redirectAttributes) {
         if (result.hasErrors()) {
             return "add-resource";
         }
 
-        User user = currentUserService.getCurrentUser(authentication);
         Resource resource = resourceService.addResource(resourceDto);
 
-        userService.addResourceToUser(user.getId(), resource.getId());
+        userService.addResourceToUser(userId, resource.getId());
 
         redirectAttributes.addFlashAttribute("success", "Resource added successfully!");
         return "redirect:/resources";
@@ -70,21 +63,18 @@ public class ResourceController {
 
     @PostMapping("/{id}/delete")
     public String deleteResource(@PathVariable("id") long id,
-                                 Authentication authentication,
+                                 @AuthenticationPrincipal(expression = "id") long userId,
                                  RedirectAttributes redirectAttributes) {
-        User user = currentUserService.getCurrentUser(authentication);
-
-        userService.removeResourceFromUser(user.getId(), id);
+        userService.removeResourceFromUser(userId, id);
 
         redirectAttributes.addFlashAttribute("success", "Resource removed successfully!");
         return "redirect:/resources";
     }
 
     @PostMapping("/refresh")
-    public String refreshResources(Authentication authentication,
+    public String refreshResources(@AuthenticationPrincipal(expression = "id") long userId,
                                    RedirectAttributes redirectAttributes) {
-        User user = currentUserService.getCurrentUser(authentication);
-        List<Resource> resources = resourceService.getUserResources(user.getId());
+        List<Resource> resources = resourceService.getUserResources(userId);
 
         int totalNewPosts = 0;
 

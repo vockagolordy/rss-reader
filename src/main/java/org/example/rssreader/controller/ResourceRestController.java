@@ -4,12 +4,10 @@ import jakarta.validation.Valid;
 import org.example.rssreader.dto.ResourceRequestDto;
 import org.example.rssreader.dto.ResourceResponseDto;
 import org.example.rssreader.model.Resource;
-import org.example.rssreader.model.User;
-import org.example.rssreader.service.CurrentUserService;
 import org.example.rssreader.service.ResourceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,19 +19,14 @@ import java.util.Map;
 public class ResourceRestController {
 
     private final ResourceService resourceService;
-    private final CurrentUserService currentUserService;
 
-    public ResourceRestController(ResourceService resourceService,
-                                  CurrentUserService currentUserService) {
+    public ResourceRestController(ResourceService resourceService) {
         this.resourceService = resourceService;
-        this.currentUserService = currentUserService;
     }
 
     @GetMapping
-    public List<ResourceResponseDto> getResources(Authentication authentication) {
-        User user = currentUserService.getCurrentUser(authentication);
-
-        return resourceService.getUserResources(user.getId())
+    public List<ResourceResponseDto> getResources(@AuthenticationPrincipal(expression = "id") long userId) {
+        return resourceService.getUserResources(userId)
                 .stream()
                 .map(ResourceResponseDto::from)
                 .toList();
@@ -42,15 +35,13 @@ public class ResourceRestController {
     @PostMapping
     public ResponseEntity<?> createResource(@Valid @RequestBody ResourceRequestDto request,
                                             BindingResult bindingResult,
-                                            Authentication authentication) {
+                                            @AuthenticationPrincipal(expression = "id") long userId) {
         if (bindingResult.hasErrors()) {
             return validationErrorResponse(bindingResult);
         }
 
-        User user = currentUserService.getCurrentUser(authentication);
-
         Resource resource = resourceService.createResourceForUser(
-                user.getId(),
+                userId,
                 request.title(),
                 request.link()
         );
@@ -64,15 +55,13 @@ public class ResourceRestController {
     public ResponseEntity<?> updateResource(@PathVariable("id") long id,
                                             @Valid @RequestBody ResourceRequestDto request,
                                             BindingResult bindingResult,
-                                            Authentication authentication) {
+                                            @AuthenticationPrincipal(expression = "id") long userId) {
         if (bindingResult.hasErrors()) {
             return validationErrorResponse(bindingResult);
         }
 
-        User user = currentUserService.getCurrentUser(authentication);
-
         return resourceService.updateUserResource(
-                        user.getId(),
+                        userId,
                         id,
                         request.title(),
                         request.link()
@@ -83,10 +72,8 @@ public class ResourceRestController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteResource(@PathVariable("id") long id,
-                                               Authentication authentication) {
-        User user = currentUserService.getCurrentUser(authentication);
-
-        boolean deleted = resourceService.deleteUserResource(user.getId(), id);
+                                               @AuthenticationPrincipal(expression = "id") long userId) {
+        boolean deleted = resourceService.deleteUserResource(userId, id);
 
         if (!deleted) {
             return ResponseEntity.notFound().build();

@@ -1,6 +1,7 @@
 package org.example.rssreader.config;
 
 import org.example.rssreader.security.OAuth2LoginHandler;
+import org.example.rssreader.security.AuthenticatedUserPrincipal;
 import org.example.rssreader.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -71,11 +72,7 @@ public class SecurityConfig {
             org.example.rssreader.model.User user = userService.findLocalByUsername(username)
                     .orElseThrow(() -> new UsernameNotFoundException("Local user not found: " + username));
 
-            return org.springframework.security.core.userdetails.User.builder()
-                    .username(user.getUsername())
-                    .password(user.getPasswordHash())
-                    .roles("USER")
-                    .build();
+            return AuthenticatedUserPrincipal.local(user);
         };
     }
 }

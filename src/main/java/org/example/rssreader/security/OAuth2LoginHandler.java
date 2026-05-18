@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.example.rssreader.service.UserService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -28,7 +29,20 @@ public class OAuth2LoginHandler implements AuthenticationSuccessHandler, Authent
                                         Authentication authentication)
             throws IOException, ServletException {
         if (authentication instanceof OAuth2AuthenticationToken oauthToken) {
-            userService.findOrCreateOAuthUser(oauthToken);
+            var user = userService.findOrCreateOAuthUser(oauthToken);
+            var principal = AuthenticatedUserPrincipal.oauth(
+                    user,
+                    oauthToken.getPrincipal().getAttributes(),
+                    oauthToken.getName()
+            );
+            var updatedAuthentication = new OAuth2AuthenticationToken(
+                    principal,
+                    principal.getAuthorities(),
+                    oauthToken.getAuthorizedClientRegistrationId()
+            );
+            updatedAuthentication.setDetails(oauthToken.getDetails());
+
+            SecurityContextHolder.getContext().setAuthentication(updatedAuthentication);
         }
 
         response.sendRedirect(request.getContextPath() + "/posts");

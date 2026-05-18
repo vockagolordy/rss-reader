@@ -1,20 +1,17 @@
 package org.example.rssreader.controller;
 
-import org.example.rssreader.dto.PostDto;
+import org.example.rssreader.dto.FeedDto;
 import org.example.rssreader.model.Post;
 import org.example.rssreader.model.Resource;
-import org.example.rssreader.model.User;
-import org.example.rssreader.service.CurrentUserService;
 import org.example.rssreader.service.PostService;
 import org.example.rssreader.service.ResourceService;
 import org.springframework.data.domain.Page;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Controller
@@ -23,22 +20,17 @@ public class PostController {
 
     private final PostService postService;
     private final ResourceService resourceService;
-    private final CurrentUserService currentUserService;
 
     public PostController(PostService postService,
-                          ResourceService resourceService,
-                          CurrentUserService currentUserService) {
+                          ResourceService resourceService) {
         this.postService = postService;
         this.resourceService = resourceService;
-        this.currentUserService = currentUserService;
     }
 
     @GetMapping
-    public String showFeed(Authentication authentication,
+    public String showFeed(@AuthenticationPrincipal(expression = "id") long userId,
                            Model model) {
-        User user = currentUserService.getCurrentUser(authentication);
-
-        int newPostsCount = postService.refreshUserFeed(user.getId());
+        int newPostsCount = postService.refreshUserFeed(userId);
 
         if (newPostsCount > 0) {
             model.addAttribute("info", String.format("Found %d new posts!", newPostsCount));
@@ -49,34 +41,18 @@ public class PostController {
 
     @ResponseBody
     @GetMapping("/feed")
-    public Map<String, Object> getFeedPosts(@RequestParam(name = "page", defaultValue = "0") int page,
-                                            @RequestParam(name = "size", defaultValue = "10") int size,
-                                            Authentication authentication) {
-        User user = currentUserService.getCurrentUser(authentication);
+    public FeedDto getFeedPosts(@RequestParam(name = "page", defaultValue = "0") int page,
+                                @RequestParam(name = "size", defaultValue = "10") int size,
+                                @AuthenticationPrincipal(expression = "id") long userId) {
+        Page<Post> postPage = postService.getUserFeedPage(userId, page, size);
 
-        Page<Post> postPage = postService.getUserFeedPage(user.getId(), page, size);
-
-        List<PostDto> posts = postPage.getContent()
-                .stream()
-                .map(PostDto::from)
-                .toList();
-
-        return Map.of(
-                "posts", posts,
-                "page", postPage.getNumber(),
-                "size", postPage.getSize(),
-                "totalElements", postPage.getTotalElements(),
-                "totalPages", postPage.getTotalPages(),
-                "hasNext", postPage.hasNext()
-        );
+        return FeedDto.from(postPage);
     }
 
     @GetMapping("/{id}")
     public String showPost(@PathVariable("id") long id,
-                           Authentication authentication,
+                           @AuthenticationPrincipal(expression = "id") long userId,
                            Model model) {
-        User user = currentUserService.getCurrentUser(authentication);
-
         Optional<Post> postOpt = postService.getPostById(id);
 
         if (postOpt.isEmpty()) {
@@ -85,7 +61,7 @@ public class PostController {
 
         Post post = postOpt.get();
 
-        List<Resource> userResources = resourceService.getUserResources(user.getId());
+        List<Resource> userResources = resourceService.getUserResources(userId);
         boolean hasAccess = userResources.stream()
                 .anyMatch(resource -> resource.getId() == post.getResourceId());
 
